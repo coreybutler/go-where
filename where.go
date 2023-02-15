@@ -13,7 +13,8 @@ var str string
 
 // Find the first path containing the executable
 func Find(executable string, recursive ...bool) (string, error) {
-	result := FindAll(executable, recursive...)
+	executable = filepath.Base(executable)
+	result, _ := FindAll(executable, recursive...)
 
 	if len(result) == 0 {
 		return str, errors.New("not found")
@@ -23,7 +24,8 @@ func Find(executable string, recursive ...bool) (string, error) {
 }
 
 // Find all known locations of an executable
-func FindAll(executable string, recursive ...bool) []string {
+func FindAll(executable string, recursive ...bool) ([]string, error) {
+	executable = filepath.Base(executable)
 	paths := strings.Split(os.Getenv("PATH"), ";")
 	results := make([]string, 0)
 
@@ -36,7 +38,10 @@ func FindAll(executable string, recursive ...bool) []string {
 		// If file exists, add the path
 		if fs.Exists(filepath.Join(dir, executable)) {
 			if fs.IsExecutable(filepath.Join(dir, executable)) || contains(Executables, filepath.Ext(executable)) {
-				results = append(results, filepath.Join(dir, executable))
+				newPath := filepath.Join(dir, executable)
+				if !contains(results, newPath) {
+					results = append(results, newPath)
+				}
 			}
 		} else {
 			// Expand any environment variables
@@ -59,12 +64,14 @@ func FindAll(executable string, recursive ...bool) []string {
 			matches, err := filepath.Glob(filepath.Join(dir, file))
 			if err == nil {
 				for _, file := range matches {
-					// Determine whether the file is executable or not
-					if fs.IsExecutable(file) {
-						results = append(results, file)
-					} else {
-						if contains(Executables, filepath.Ext(file)) || file == filepath.Join(dir, executable) {
+					if !contains(results, file) {
+						// Determine whether the file is executable or not
+						if fs.IsExecutable(file) {
 							results = append(results, file)
+						} else {
+							if contains(Executables, filepath.Ext(file)) || file == filepath.Join(dir, executable) {
+								results = append(results, file)
+							}
 						}
 					}
 				}
@@ -72,7 +79,7 @@ func FindAll(executable string, recursive ...bool) []string {
 		}
 	}
 
-	return results
+	return results, nil
 }
 
 func contains(list []string, value string) bool {

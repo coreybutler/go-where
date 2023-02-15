@@ -1,5 +1,7 @@
 # go-where
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/coreybutler/go-where.svg)](https://pkg.go.dev/github.com/coreybutler/go-where)
+
 A library for determining the root path of an executable. Supported on Windows, macOS, and Linux.
 
 _myapp.go_:
@@ -33,7 +35,7 @@ C:\nodejs\node.exe
 
 ## Alternative function
 
-`where.FindAll()` is also available. This method returns a slice of strings (`[]string`) containing the file name. An empty slice is returned if the file cannot be found.
+`where.FindAll()` is also available. This method returns a slice of strings (`[]string`) containing the paths where the executable/binary is located. This is useful for identifying multiple installations of a particular program. An empty slice is returned if the file cannot be found.
 
 ## File Extensions
 
