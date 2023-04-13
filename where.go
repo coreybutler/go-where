@@ -3,7 +3,9 @@ package where
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	fs "github.com/coreybutler/go-fsutil"
@@ -17,6 +19,20 @@ func Find(executable string, recursive ...bool) (string, error) {
 	result, _ := FindAll(executable, recursive...)
 
 	if len(result) == 0 {
+		if runtime.GOOS == "windows" {
+			// Terminal
+			path, err := exec.Command("where", executable).Output()
+			if err == nil {
+				return strings.TrimSpace(strings.Split(string(path), "\n")[0]), nil
+			}
+
+			// Powershell
+			path, err = exec.Command("powershell", "-Command", "Get-Command", executable, "| Select-Object -ExpandProperty Source").Output()
+			if err == nil {
+				return strings.TrimSpace(strings.Split(string(path), "\n")[0]), nil
+			}
+		}
+
 		return str, errors.New("not found")
 	}
 
