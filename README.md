@@ -4,6 +4,9 @@
 
 A library for determining the root path of an executable. Supported on Windows, macOS, and Linux.
 
+> **Breaking changes in v2.0.0**
+> The library has been simplified to a single exported function that accepts a configuration object. All of the prior capabilities are supported, but there are no longer inidivdual functions for finding one path vs multiple paths, exceptions, etc.
+
 _myapp.go_:
 
 ```go
@@ -23,7 +26,7 @@ func main() {
     panic(err)
   }
 
-  fmt.Print(path)
+  fmt.Print(path[0])
 }
 ```
 
@@ -34,9 +37,23 @@ $ go run myapp.go node.exe
 C:\nodejs\node.exe
 ```
 
-## Exceptions
+## Confguration Options
 
-There are environments where the same executable may exist on a system multiple times (different versions, different architecture, etc). If you need to exclude known specific paths, use the `FindExcept`.
+The `Options` type is defined as:
+
+```go
+type Options struct {
+	All       bool     `json:"all"`
+	Recursive bool     `json:"recursive"`
+	Except    []string `json:"except"`
+}
+```
+
+|Option|Description|Default|
+|-|:-|:--:|
+|_All_|Return all paths where the executable is found (as opposed to the first one)|`false`|
+|_Recursive_|Search `PATH` directories recursively for the executable.|`true`|
+|_Except_|A slice of paths/glob patterns to ignore. Ths can be used to override specific file types, such as ignoring `.bat` files on Windows| `[]string{}` (empty slice)|
 
 ```go
 package main
@@ -50,46 +67,46 @@ import (
 func main() {
   executable := os.Args[1]
   // The boolean argument indicates a recursive lookup
-  path, err := where.FindExcept(executable, true, "C:\nodejs\node.exe")
+  path, err := where.Find(executable, where.Options{
+    Except: []string{"C:\nodejs\node.exe"}
+  })
 
   if err != nil {
     panic(err)
   }
 
-  fmt.Print(path)
+  fmt.Print(path[0])
 }
 ```
 
 ```sh
 $ go run myapp.go node.exe
-C:\nvm\v20.0.0\node.exe
-# Notice C:\nodejs\node.exe was ignored
+not found
+# C:\nodejs\node.exe was ignored!
 ```
-
-## Alternative function
-
-`where.FindAll()` and `where.FindAllExcept()` are also available. These methods return a slice of strings (`[]string`) containing the paths where the executable/binary is located (except those explicitly ignored in `FindAllExcept`). This is useful for identifying multiple installations of a particular program. An empty slice is returned if the file cannot be found.
 
 ## File Extensions
 
-It is best to supply the file extension of the executable, but this library will attempt to identify executables in two manners.
+It is best to supply the file extension of the executable, but this library will attempt to identify executables in three ways:
 
-**By Permissions**
-If the file has explicit execute permissions, it will be considered "executable" and returned by the `Find/FindExcept` and `FindAll/FindAllExcept` methods.
+**By bit**
+On some operating systems, the first byte(s) of the file flag whether it is executable or not.
 
-**By extension**
-This module attempts to determine if a file is executable by its file extension.
+**By file permissions**
+If the file has explicit execute permissions, it will be considered "executable".
+
+**By file extension**
+File extensions are used as a last resort.
 
 For example:
 
 ```go
 fmt.Print(where.Find("node"))
-
 // C:\nodejs\node.exe
 ```
 
-File extension identification is limited to a hard coded list of known extensions. See the files named `expand_*.go`.
+File extension identification is limited to a hard-coded list of known extensions. See the files named `expand_*.go`.
 
---
+---
 
-Copyright (c) 2021 Corey Butler and contributors.
+Copyright (c) 2021-2024 Corey Butler and contributors.

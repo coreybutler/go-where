@@ -3,103 +3,65 @@ package where
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	fs "github.com/coreybutler/go-fsutil"
 )
 
-var str string
+type Options struct {
+	All       bool     `json:"all"`
+	Recursive bool     `json:"recursive"`
+	Except    []string `json:"except"`
+}
+
+var emptybool bool
 
 // Find the first path containing the executable
-func Find(executable string, recursive ...bool) (string, error) {
-	executable = filepath.Base(executable)
-	result, _ := FindAll(executable, recursive...)
-
-	if len(result) == 0 {
-		if runtime.GOOS == "windows" {
-			// Terminal
-			path, err := exec.Command("where", executable).Output()
-			if err == nil {
-				return strings.TrimSpace(strings.Split(string(path), "\n")[0]), nil
-			}
-
-			// Powershell
-			path, err = exec.Command("powershell", "-Command", "Get-Command", executable, "| Select-Object -ExpandProperty Source").Output()
-			if err == nil {
-				return strings.TrimSpace(strings.Split(string(path), "\n")[0]), nil
-			}
-		}
-
-		return str, errors.New("not found")
+func Find(executable string, opts ...Options) ([]string, error) {
+	var cfg Options
+	if len(opts) > 0 {
+		cfg = opts[0]
+	} else {
+		cfg = Options{}
 	}
 
-	return result[0], nil
-}
-
-func FindExcept(executable string, recursive bool, except ...string) (string, error) {
-	executable = filepath.Base(executable)
-	result, _ := FindAll(executable, recursive)
-
-	if len(result) == 0 {
-		return str, errors.New("not found")
+	if cfg.All == emptybool {
+		cfg.All = false
+	}
+	if cfg.Recursive == emptybool {
+		cfg.Recursive = true
+	}
+	if cfg.Except == nil {
+		cfg.Except = []string{}
 	}
 
-	for _, path := range result {
-		if !contains(except, path) {
-			return path, nil
-		}
-	}
-
-	return str, errors.New("not found")
-}
-
-func FindAllExcept(executable string, recursive bool, except ...string) ([]string, error) {
 	executable = filepath.Base(executable)
-	result, _ := FindAll(executable, recursive)
+	result, _ := seek(executable, cfg)
 
 	if len(result) == 0 {
 		return []string{}, errors.New("not found")
 	}
 
-	results := make([]string, 0)
-	for _, path := range result {
-		if !contains(except, path) {
-			results = append(results, path)
-		}
-	}
-
-	return results, nil
+	return result, nil
 }
 
-// Find all known locations of an executable
-func FindAll(executable string, recursive ...bool) ([]string, error) {
-	executable = filepath.Base(executable)
+func seek(exe string, opts Options) ([]string, error) {
 	paths := strings.Split(os.Getenv("PATH"), ";")
-	results := make([]string, 0)
-
-	r := false
-	if len(recursive) > 0 {
-		r = recursive[0]
-	}
+	results := make(map[string]bool)
 
 	for _, dir := range paths {
 		// If file exists, add the path
-		if fs.Exists(filepath.Join(dir, executable)) {
-			if fs.IsExecutable(filepath.Join(dir, executable)) || contains(Executables, filepath.Ext(executable)) {
-				newPath := filepath.Join(dir, executable)
-				if !contains(results, newPath) {
-					results = append(results, newPath)
-				}
+		if fs.Exists(filepath.Join(dir, exe)) {
+			if fs.IsExecutable(filepath.Join(dir, exe)) || contains(Executables, filepath.Ext(exe)) {
+				results[filepath.Join(dir, exe)] = true
 			}
 		} else {
 			// Expand any environment variables
 			dir = Expand(dir)
 
 			// If the file does not exist
-			file := executable
+			file := exe
 
 			// Support all file extensions if none is specified
 			if len(strings.Split(file, ".")) == 0 {
@@ -107,7 +69,7 @@ func FindAll(executable string, recursive ...bool) ([]string, error) {
 			}
 
 			// Support recursive lookups
-			if r {
+			if opts.Recursive {
 				dir = filepath.Join(dir, "**")
 			}
 
@@ -115,14 +77,12 @@ func FindAll(executable string, recursive ...bool) ([]string, error) {
 			matches, err := filepath.Glob(filepath.Join(dir, file))
 			if err == nil {
 				for _, file := range matches {
-					if !contains(results, file) {
-						// Determine whether the file is executable or not
-						if fs.IsExecutable(file) {
-							results = append(results, file)
-						} else {
-							if contains(Executables, filepath.Ext(file)) || file == filepath.Join(dir, executable) {
-								results = append(results, file)
-							}
+					// Determine whether the file is executable or not
+					if fs.IsExecutable(file) {
+						results[file] = true
+					} else {
+						if contains(Executables, filepath.Ext(file)) || file == filepath.Join(dir, exe) {
+							results[file] = true
 						}
 					}
 				}
@@ -130,7 +90,24 @@ func FindAll(executable string, recursive ...bool) ([]string, error) {
 		}
 	}
 
-	return results, nil
+	if len(opts.Except) > 0 {
+		// Remove exceptions
+		for path, _ := range results {
+			for _, pattern := range opts.Except {
+				matched, _ := filepath.Match(pattern, path)
+				if matched {
+					delete(results, path)
+				}
+			}
+		}
+	}
+
+	final := []string{}
+	for path := range results {
+		final = append(final, path)
+	}
+
+	return final, nil
 }
 
 func contains(list []string, value string) bool {
