@@ -39,6 +39,41 @@ func Find(executable string, recursive ...bool) (string, error) {
 	return result[0], nil
 }
 
+func FindExcept(executable string, recursive bool, except ...string) (string, error) {
+	executable = filepath.Base(executable)
+	result, _ := FindAll(executable, recursive)
+
+	if len(result) == 0 {
+		return str, errors.New("not found")
+	}
+
+	for _, path := range result {
+		if !contains(except, path) {
+			return path, nil
+		}
+	}
+
+	return str, errors.New("not found")
+}
+
+func FindAllExcept(executable string, recursive bool, except ...string) ([]string, error) {
+	executable = filepath.Base(executable)
+	result, _ := FindAll(executable, recursive)
+
+	if len(result) == 0 {
+		return []string{}, errors.New("not found")
+	}
+
+	results := make([]string, 0)
+	for _, path := range result {
+		if !contains(except, path) {
+			results = append(results, path)
+		}
+	}
+
+	return results, nil
+}
+
 // Find all known locations of an executable
 func FindAll(executable string, recursive ...bool) ([]string, error) {
 	executable = filepath.Base(executable)
