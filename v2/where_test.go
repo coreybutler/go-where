@@ -1,7 +1,6 @@
 package where
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,7 +18,26 @@ func TestFind(t *testing.T) {
 		t.Fail()
 	}
 
-	t.Log(out)
+	t.Log(out[0])
+}
+
+func TestFindException(t *testing.T) {
+	file := "node.exe"
+	// makeTestExecutable(file)
+
+	out, err := Find(file)
+	if err != nil {
+		t.Log("File error: " + err.Error())
+		t.Fail()
+	}
+
+	output, err := Find(file, Options{
+		Except: out,
+	})
+	if err == nil {
+		t.Logf("expected no results, got %d", len(output))
+		t.Fail()
+	}
 
 	// if out != filepath.Join(root(), file) {
 	// 	t.Logf("Expected %v, Received %v", filepath.Join(root(), file), out)
@@ -37,7 +55,7 @@ func makeTestExecutable(filename string) {
 	file := filepath.Join(root(), filename)
 	perm := os.ModePerm
 
-	ioutil.WriteFile(file, []byte("test"), perm)
+	os.WriteFile(file, []byte("test"), perm)
 	log.Print("Created temp file: " + file)
 }
 
