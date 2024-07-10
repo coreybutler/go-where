@@ -138,6 +138,10 @@ func contains(list []string, value string) bool {
 		if value == item {
 			return true
 		}
+		matched, err := filepath.Match(item, value)
+		if err == nil && matched {
+			return true
+		}
 	}
 
 	return false
