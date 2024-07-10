@@ -15,7 +15,7 @@ package main
 import (
   "fmt"
   "os"
-  "github.com/coreybutler/go-where"
+  "github.com/coreybutler/go-where/v2"
 )
 
 func main() {
@@ -49,11 +49,11 @@ type Options struct {
 }
 ```
 
-|Option|Description|Default|
-|-|:-|:--:|
-|_All_|Return all paths where the executable is found (as opposed to the first one)|`false`|
-|_Recursive_|Search `PATH` directories recursively for the executable.|`true`|
-|_Except_|A slice of paths/glob patterns to ignore. Ths can be used to override specific file types, such as ignoring `.bat` files on Windows| `[]string{}` (empty slice)|
+| Option        | Description                                                                                                                           |           Default           |
+| ------------- | :------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------: |
+| _All_       | Return all paths where the executable is found (as opposed to the first one)                                                          |          `false`          |
+| _Recursive_ | Search `PATH` directories recursively for the executable.                                                                           |           `true`           |
+| _Except_    | A slice of paths/glob patterns to ignore. Ths can be used to override specific file types, such as ignoring `.bat` files on Windows | `[]string{}` (empty slice) |
 
 ```go
 package main
@@ -61,7 +61,7 @@ package main
 import (
   "fmt"
   "os"
-  "github.com/coreybutler/go-where"
+  "github.com/coreybutler/go-where/v2"
 )
 
 func main() {
