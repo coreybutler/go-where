@@ -1,4 +1,4 @@
-name: Lookup Go Module Version
+name: Refresh Go Module Cache
 
 on:
   release:
@@ -13,6 +13,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Extract major version from release tag
+        id: extract_major_version
+        run: |
+          TAG_NAME=${{ github.event.release.tag_name }}
+          MAJOR_VERSION=$(echo $TAG_NAME | sed -E 's/^v([0-9]+).*$/\1/')
+          if [ "$MAJOR_VERSION" -ge 2 ]; then
+            MODULE_PATH="github.com/coreybutler/go-where/v$MAJOR_VERSION"
+          else
+            MODULE_PATH="github.com/coreybutler/go-where"
+          fi
+          echo "MODULE_PATH=$MODULE_PATH" >> $GITHUB_ENV
+          echo "VERSION=$TAG_NAME" >> $GITHUB_ENV
+
       - name: Refresh Go Module Cache
         run: |
-          curl https://sum.golang.org/lookup/github.com/coreybutler/go-where@${{ github.event.release.tag_name }}
+          curl https://sum.golang.org/lookup/$MODULE_PATH@$VERSION
