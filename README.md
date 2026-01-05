@@ -46,6 +46,7 @@ type Options struct {
 	All       bool     `json:"all"`
 	Recursive bool     `json:"recursive"`
 	Except    []string `json:"except"`
+  Timeout time.Duration `json:"timeout"` // (optional) default 5s
 }
 ```
 
