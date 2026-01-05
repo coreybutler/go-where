@@ -49,11 +49,11 @@ type Options struct {
 }
 ```
 
-| Option        | Description                                                                                                                           |           Default           |
-| ------------- | :------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------: |
-| _All_       | Return all paths where the executable is found (as opposed to the first one)                                                          |          `false`          |
-| _Recursive_ | Search `PATH` directories recursively for the executable.                                                                           |           `true`           |
-| _Except_    | A slice of paths/glob patterns to ignore. Ths can be used to override specific file types, such as ignoring `.bat` files on Windows | `[]string{}` (empty slice) |
+|Option|Description|Default|
+|:-|:-|:-|
+|_All_|Return all paths where the executable is found (as opposed to the first one)|`false`|
+|_Recursive_|Search `PATH` directories recursively for the executable.|`true`|
+|_Except_|A slice of paths/glob patterns to ignore. Ths can be used to override specific file types, such as ignoring `.bat` files on Windows|`[]string{}` (empty slice)|
 
 ```go
 package main
@@ -105,8 +105,14 @@ fmt.Print(where.Find("node"))
 // C:\nodejs\node.exe
 ```
 
-File extension identification is limited to a hard-coded list of known extensions. See the files named `expand_*.go`.
+On Windows, the `PATHEXT` environment variable is used as a fallback to determine if an app is executable. On macOS/Linux, it is limited to a hard-coded list of known extensions. See the files named `expand_*.go`.
+
+You can specify an additional list of extensions to match against by  setting the `Extensions` value:
+
+```go
+where.Extensions = []string{".special", ".ext"}
+```
 
 ---
 
-Copyright (c) 2021-2024 Corey Butler and contributors.
+Copyright (c) 2021-2026 Corey Butler and contributors.

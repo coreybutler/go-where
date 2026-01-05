@@ -1,9 +1,7 @@
 package where
 
 import (
-	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -51,16 +49,16 @@ func root() string {
 	return strings.Split(os.Getenv("PATH"), ";")[0]
 }
 
-func makeTestExecutable(filename string) {
-	file := filepath.Join(root(), filename)
-	perm := os.ModePerm
+// func makeTestExecutable(filename string) {
+// 	file := filepath.Join(root(), filename)
+// 	perm := os.ModePerm
 
-	os.WriteFile(file, []byte("test"), perm)
-	log.Print("Created temp file: " + file)
-}
+// 	os.WriteFile(file, []byte("test"), perm)
+// 	log.Print("Created temp file: " + file)
+// }
 
-func clear(filename string) {
-	file := filepath.Join(root(), filename)
-	os.RemoveAll(file)
-	log.Print("Removed temp file: " + file)
-}
+// func clear(filename string) {
+// 	file := filepath.Join(root(), filename)
+// 	os.RemoveAll(file)
+// 	log.Print("Removed temp file: " + file)
+// }

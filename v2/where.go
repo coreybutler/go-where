@@ -16,6 +16,7 @@ type Options struct {
 }
 
 var emptybool bool
+var Extensions []string
 
 // Find the first path containing the executable
 func Find(executable string, opts ...Options) ([]string, error) {
@@ -53,7 +54,7 @@ func seek(exe string, opts Options) ([]string, error) {
 	for _, dir := range paths {
 		// If file exists, add the path
 		if fs.Exists(filepath.Join(dir, exe)) {
-			if fs.IsExecutable(filepath.Join(dir, exe)) || contains(Executables, filepath.Ext(exe)) {
+			if fs.IsExecutable(filepath.Join(dir, exe)) || contains(Executables, filepath.Ext(exe)) || contains(Extensions, filepath.Ext(exe)) {
 				results[filepath.Join(dir, exe)] = true
 			}
 		} else {
