@@ -17,6 +17,8 @@ type Options struct {
 
 var emptybool bool
 var Extensions []string
+var AltPaths []string
+var DisableExtensionChecking bool = false
 
 // Find the first path containing the executable
 func Find(executable string, opts ...Options) ([]string, error) {
@@ -47,15 +49,29 @@ func Find(executable string, opts ...Options) ([]string, error) {
 	return result, nil
 }
 
+func isExecutableExtension(exe string) bool {
+	if DisableExtensionChecking {
+		return false
+	}
+
+	return (contains(Executables, filepath.Ext(exe)) || contains(Extensions, filepath.Ext(exe)))
+}
+
 func seek(exe string, opts Options) ([]string, error) {
 	paths := strings.Split(os.Getenv("PATH"), ";")
 	results := make(map[string]bool)
 
+	for _, path := range AltPaths {
+		paths = append(paths, path)
+	}
+
 	for _, dir := range paths {
 		// If file exists, add the path
 		if fs.Exists(filepath.Join(dir, exe)) {
-			if fs.IsExecutable(filepath.Join(dir, exe)) || contains(Executables, filepath.Ext(exe)) || contains(Extensions, filepath.Ext(exe)) {
-				results[filepath.Join(dir, exe)] = true
+			if fs.IsExecutable(filepath.Join(dir, exe)) {
+				if isExecutableExtension(exe) {
+					results[filepath.Join(dir, exe)] = true
+				}
 			}
 		} else {
 			// Expand any environment variables
@@ -82,7 +98,7 @@ func seek(exe string, opts Options) ([]string, error) {
 					if fs.IsExecutable(file) {
 						results[file] = true
 					} else {
-						if contains(Executables, filepath.Ext(file)) || file == filepath.Join(dir, exe) {
+						if isExecutableExtension(exe) || file == filepath.Join(dir, exe) {
 							results[file] = true
 						}
 					}

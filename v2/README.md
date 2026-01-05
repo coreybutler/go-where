@@ -87,7 +87,7 @@ not found
 
 ## File Extensions
 
-It is best to supply the file extension of the executable, but this library will attempt to identify executables in three ways:
+It is best to supply the file extension of the executable in the `Find()` method, but this library will attempt to identify executables in three ways:
 
 **By bit**
 On some operating systems, the first byte(s) of the file flag whether it is executable or not.
@@ -96,7 +96,7 @@ On some operating systems, the first byte(s) of the file flag whether it is exec
 If the file has explicit execute permissions, it will be considered "executable".
 
 **By file extension**
-File extensions are used as a last resort.
+File extensions are used as a last resort. This is not a foolproof way to identify executables, but it can be effective in many scenarios. This check can be disabled by setting `where.DisableExtensionChecking = true`
 
 For example:
 
@@ -111,6 +111,14 @@ You can specify an additional list of extensions to match against by  setting th
 
 ```go
 where.Extensions = []string{".special", ".ext"}
+```
+
+## Alternative Root Paths
+
+While `PATH` is the default root of systemwide executables, non-standard alternative/additional root paths are sometimes supported in shell profiles or runtimes. For example, `GOBIN` stores executables installed with `go install`. Alternative paths can be included by setting the `AltPaths` setting:
+
+```go
+where.AltPaths = []string{os.Getenv("GOBIN")}
 ```
 
 ---
