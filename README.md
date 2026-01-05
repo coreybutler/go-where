@@ -55,6 +55,7 @@ type Options struct {
 |_All_|Return all paths where the executable is found (as opposed to the first one)|`false`|
 |_Recursive_|Search `PATH` directories recursively for the executable.|`true`|
 |_Except_|A slice of paths/glob patterns to ignore. Ths can be used to override specific file types, such as ignoring `.bat` files on Windows|`[]string{}` (empty slice)|
+|_Timeout_|The amount of time before the `Find()` method exits.|
 
 ```go
 package main
