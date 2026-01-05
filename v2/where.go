@@ -1,18 +1,21 @@
 package where
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	fs "github.com/coreybutler/go-fsutil"
 )
 
 type Options struct {
-	All       bool     `json:"all"`
-	Recursive bool     `json:"recursive"`
-	Except    []string `json:"except"`
+	All       bool          `json:"all"`
+	Recursive bool          `json:"recursive"`
+	Except    []string      `json:"except"`
+	Timeout   time.Duration `json:"timeout"` // Default: 5 seconds
 }
 
 var emptybool bool
@@ -38,9 +41,16 @@ func Find(executable string, opts ...Options) ([]string, error) {
 	if cfg.Except == nil {
 		cfg.Except = []string{}
 	}
+	if cfg.Timeout == 0 {
+		cfg.Timeout = 5 * time.Second
+	}
 
 	executable = filepath.Base(executable)
-	result, _ := seek(executable, cfg)
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
+	defer cancel()
+
+	result, _ := seek(ctx, executable, cfg)
 
 	if len(result) == 0 {
 		return []string{}, errors.New("not found")
@@ -57,7 +67,7 @@ func isExecutableExtension(exe string) bool {
 	return (contains(Executables, filepath.Ext(exe)) || contains(Extensions, filepath.Ext(exe)))
 }
 
-func seek(exe string, opts Options) ([]string, error) {
+func seek(ctx context.Context, exe string, opts Options) ([]string, error) {
 	paths := strings.Split(os.Getenv("PATH"), ";")
 	results := make(map[string]bool)
 
@@ -66,6 +76,13 @@ func seek(exe string, opts Options) ([]string, error) {
 	}
 
 	for _, dir := range paths {
+		// Check for timeout
+		select {
+		case <-ctx.Done():
+			return []string{}, errors.New("operation timed out")
+		default:
+		}
+
 		// If file exists, add the path
 		if fs.Exists(filepath.Join(dir, exe)) {
 			if fs.IsExecutable(filepath.Join(dir, exe)) {
@@ -78,11 +95,11 @@ func seek(exe string, opts Options) ([]string, error) {
 			dir = Expand(dir)
 
 			// If the file does not exist
-			file := exe
+			file := strings.TrimSpace(exe)
 
 			// Support all file extensions if none is specified
-			if len(strings.Split(file, ".")) == 0 {
-				file = file + ".*"
+			if len(strings.Split(strings.TrimSpace(file), ".")) <= 1 {
+				file = strings.TrimSpace(file) + ".*"
 			}
 
 			// Support recursive lookups
